@@ -1,0 +1,24 @@
+{
+  "name": "node-reference",
+  "description": "Generate node module require relationship diagram.",
+  "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/RoymanJing/node-reference"
+  },
+  "main": "index.js",
+  "keywords": [
+    "require",
+    "source",
+  ],
+  "scripts": {
+    "test": "tap test/*.js"
+  },
+  "dependencies": {
+    "detective": "^4.2.0"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Royman Jing"
+  }
+}
