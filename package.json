@@ -9,7 +9,7 @@
   "main": "index.js",
   "keywords": [
     "require",
-    "source",
+    "source"
   ],
   "scripts": {
     "test": "tap test/*.js"
