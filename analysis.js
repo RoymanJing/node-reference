@@ -1,5 +1,6 @@
 var detective = require('detective');
 var fs = require('fs');
+var path = require('path');
 
 if (!String.prototype.startsWith) {
   String.prototype.startsWith = function(searchString, position) {
@@ -35,24 +36,51 @@ function getNode(nodeName){
 	return null;
 }
 
-getRequires('\\server.js',"--");
+function getOriginalNode(nodeName){
+	for (var index = 0; index < nodes.length; index++) {
+		var element = nodes[index];
+		if(element.nodeName==nodeName) return element;
+	}
+	return null;
+}
 
-function getRequires(filename,prev){
-	var node=new ReferNode(filename);
-	var src = fs.readFileSync(__dirname+"\\" + filename);
+function getAbsPath(fileName, currentpath){
+	return path.resolve(currentpath||__dirname, fileName);
+}
+
+function getRelativePath(fileName){
+	return fileName.replace(__dirname, "");
+}
+
+getRequires(process.argv[2]);
+
+function getRequires(filename, currentpath){
+	var fullpath = getAbsPath(filename, currentpath);
+	var node = getOriginalNode(getRelativePath(fullpath));
+	if(node){
+		console.log(fullpath+"~~~~~~~~");
+		return;
+	}
+	console.log(fullpath);
+	node = new ReferNode(getRelativePath(fullpath));
+	if(!fs.existsSync(fullpath)){
+		currentpath = currentpath || fullpath.replace(".js","");
+		fullpath = path.resolve(currentpath, "index.js");
+	}
+	var src = fs.readFileSync(fullpath);
 	var requires = detective(src);
-	for(var i=0;i<requires.length;i++){
-		var fn=requires[i];
+	for(var i = 0; i < requires.length; i++){
+		var fn = requires[i];
+		if((fn.startsWith(".") || fn.startsWith("\\") || fn.startsWith("/")) && !fn.endsWith(".json")){
+			if(!fn.endsWith(".js")) fn+=".js";
+			getRequires(fn, currentpath);
+			fn = getRelativePath(getAbsPath(filename, currentpath));
+		}
 		if(!fn.endsWith(".json")){
-			if(fn.startsWith(".")){
-				if(!fn.endsWith(".js")) fn+=".js";
-			}
 			node.requires.push(fn);
 		}
-		if(fn.startsWith(".") && !fn.endsWith(".json")){
-			getRequires(fn, prev+prev);
-		}
 	}
+	
 	nodes.push(node);
 }
 
@@ -60,19 +88,20 @@ var onodes=[];
 var links=[];
 
 function pushNode(name){
-	var node=getNode(name);
+	var node = getNode(name);
 	if(!node){
-		onodes.push({name:name,category:name.startsWith(".")?0:1,value:3});
+		onodes.push({name:name, category:name.startsWith(".")?0:1,value:3});
 	}
 	else{
 		node.value++;
 	}
 }
+
 nodes.forEach(function(ele) {
 	pushNode(ele.nodeName);
 	ele.requires.forEach(function(req){
 		pushNode(req);
-		links.push({source:ele.nodeName,target:req})
+		links.push({source:ele.nodeName, target:req})
 	});
 });
 
